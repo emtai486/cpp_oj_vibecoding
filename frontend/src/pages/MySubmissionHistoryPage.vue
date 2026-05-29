@@ -5,7 +5,7 @@ import PageHeader from '../components/PageHeader.vue';
 
 <template>
   <div class="page-stack">
-    <PageHeader title="My submission history" description="Review your accepted, failed, and pending attempts." />
-    <EmptyState title="No submission history" message="Your submissions will appear here after you send code for judging." />
+    <PageHeader title="我的提交历史" description="查看已通过、未通过和等待中的提交。" />
+    <EmptyState title="暂无提交历史" message="你提交代码后，记录会显示在这里。" />
   </div>
 </template>

@@ -4,6 +4,6 @@ import PageHeader from '../../components/PageHeader.vue';
 
 <template>
   <div class="page-stack">
-    <PageHeader title="Worker status" description="Monitor judge worker health and capacity." />
+    <PageHeader title="Worker 状态" description="监控判题 Worker 的健康状态和处理能力。" />
   </div>
 </template>

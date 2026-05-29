@@ -5,7 +5,7 @@ import PageHeader from '../components/PageHeader.vue';
 
 <template>
   <div class="page-stack">
-    <PageHeader title="Submissions" description="Review judge status, runtime, memory, and result summaries." />
-    <EmptyState title="No submissions" message="Submission records will appear here." />
+    <PageHeader title="提交记录" description="查看判题状态、运行时间、内存和结果摘要。" />
+    <EmptyState title="暂无提交" message="提交记录会显示在这里。" />
   </div>
 </template>

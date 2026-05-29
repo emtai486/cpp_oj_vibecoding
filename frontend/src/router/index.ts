@@ -14,6 +14,7 @@ import AdminSubmissionsPage from '../pages/admin/AdminSubmissionsPage.vue';
 import AdminWorkersPage from '../pages/admin/AdminWorkersPage.vue';
 import AdminAiLogsPage from '../pages/admin/AdminAiLogsPage.vue';
 import NotFoundPage from '../pages/NotFoundPage.vue';
+import { session } from '../stores/session';
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -36,3 +37,14 @@ export const router = createRouter({
   ]
 });
 
+router.beforeEach((to) => {
+  if (to.path.startsWith('/admin') && session.role !== 'admin') {
+    return { path: '/login', query: { redirect: to.fullPath } };
+  }
+
+  if ((to.path === '/me/submissions' || to.path === '/submissions') && session.role === 'guest') {
+    return { path: '/login', query: { redirect: to.fullPath } };
+  }
+
+  return true;
+});

@@ -44,8 +44,15 @@ services:
       DATABASE_URL: postgres://oj_user:oj_password@postgres:5432/oj_db
       REDIS_URL: redis://redis:6379/0
       OPENAPI_PATH: /app/openapi/openapi.json
+      TESTDATA_ROOT: /app/testdata
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123456}
     ports:
       - "8080:8080"
+    volumes:
+      - ../testdata:/app/testdata
     depends_on:
       postgres:
         condition: service_healthy
@@ -71,4 +78,3 @@ services:
 volumes:
   postgres_data:
   redis_data:
-

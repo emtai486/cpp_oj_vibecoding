@@ -1,14 +1,16 @@
 # AI Native Online Judge V1
 
-Phase 1 scaffold for the AI Native Online Judge described in `SPEC.md`.
+Phase 2 implementation for the AI Native Online Judge described in `SPEC.md`.
 
-## Phase 1 Contents
+## Current Contents
 
 - Separated backend, frontend, deploy, docs, scripts, and testdata directories.
-- C++ API Server skeleton based on `cpp-httplib`.
+- C++ API Server based on `cpp-httplib`, PostgreSQL `libpq`, and OpenSSL.
+- User registration, login, PBKDF2 password hashing, and HMAC-SHA256 JWT authentication.
+- Published problem list/detail APIs and administrator problem/test-data management APIs.
 - Hand-written OpenAPI JSON exposed by the API Server.
 - Vue 3 + TypeScript + Vite frontend shell with initial routes and pages.
-- Docker Compose environment for frontend, API Server, PostgreSQL, and Redis.
+- Docker Compose environment for frontend, API Server, PostgreSQL, Redis, and mounted test data.
 - PostgreSQL migration bootstrap and Redis configuration.
 
 ## Quick Start
@@ -27,6 +29,14 @@ Default service URLs:
 - PostgreSQL: `localhost:5432`
 - Redis: `localhost:6379`
 
+Default local admin bootstrap values are configured in `deploy/docker-compose.yml`:
+
+- Username: `admin`
+- Email: `admin@example.com`
+- Password: `admin123456`
+
+Override `ADMIN_PASSWORD` and `JWT_SECRET` before deploying outside local development.
+
 ## Local Backend Build
 
 ```bash
@@ -43,4 +53,3 @@ cd frontend
 npm install
 npm run dev
 ```
-

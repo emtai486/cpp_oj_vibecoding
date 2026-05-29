@@ -4,6 +4,6 @@ import PageHeader from '../../components/PageHeader.vue';
 
 <template>
   <div class="page-stack">
-    <PageHeader title="AI usage logs" description="Review AI request status, cost, and failures." />
+    <PageHeader title="AI 调用日志" description="查看 AI 请求状态、费用和失败记录。" />
   </div>
 </template>
