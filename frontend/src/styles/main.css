@@ -1,0 +1,393 @@
+:root {
+  color-scheme: light;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #172033;
+  background: #f4f6f8;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --border: #d7dde6;
+  --muted: #657085;
+  --panel: #ffffff;
+  --ink: #172033;
+  --accent: #1d7a72;
+  --accent-strong: #11645d;
+  --accent-soft: #e3f4f1;
+  --warning: #a35200;
+  --danger: #b42318;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: max-content 1fr max-content;
+  gap: 24px;
+  align-items: center;
+  min-height: 64px;
+  padding: 0 32px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
+}
+
+.brand {
+  font-size: 18px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.primary-nav,
+.auth-actions,
+.editor-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.primary-nav a,
+.ghost-button,
+.solid-button,
+.editor-toolbar button,
+.admin-nav a {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.primary-nav a {
+  color: var(--muted);
+}
+
+.primary-nav a.router-link-active,
+.admin-nav a.router-link-active {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+}
+
+.ghost-button,
+.editor-toolbar button {
+  color: var(--ink);
+  background: #ffffff;
+  border-color: var(--border);
+}
+
+.solid-button {
+  color: #ffffff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.main-content {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 32px 0 48px;
+}
+
+.page-stack {
+  display: grid;
+  gap: 24px;
+}
+
+.narrow-page {
+  width: min(460px, 100%);
+  display: grid;
+  gap: 24px;
+}
+
+.page-header {
+  display: grid;
+  gap: 8px;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--accent-strong);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 0;
+  font-size: clamp(30px, 5vw, 48px);
+  line-height: 1.05;
+}
+
+h2 {
+  margin-bottom: 10px;
+  font-size: 18px;
+}
+
+.page-description,
+.empty-state p,
+.metric-card p {
+  max-width: 760px;
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.metric-card,
+.form-panel,
+.table-panel,
+.content-panel,
+.empty-state,
+.editor-panel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.metric-card {
+  padding: 20px;
+}
+
+.metric-label {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.metric-card strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 24px;
+}
+
+.form-panel {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+}
+
+.form-panel label {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.form-panel input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--ink);
+  background: #ffffff;
+}
+
+.table-panel {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+th {
+  color: var(--muted);
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.difficulty-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 9px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.difficulty-pill.easy {
+  color: #0f6b4d;
+  background: #dff5ea;
+}
+
+.difficulty-pill.medium {
+  color: var(--warning);
+  background: #fff1d6;
+}
+
+.difficulty-pill.hard {
+  color: var(--danger);
+  background: #ffe3df;
+}
+
+.problem-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 480px);
+  gap: 24px;
+  align-items: start;
+}
+
+.problem-statement {
+  display: grid;
+  gap: 24px;
+}
+
+.content-panel,
+.empty-state {
+  padding: 20px;
+}
+
+.editor-panel {
+  position: sticky;
+  top: 88px;
+  overflow: hidden;
+}
+
+.editor-toolbar {
+  justify-content: space-between;
+  min-height: 52px;
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.editor-toolbar span {
+  padding-left: 8px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+pre {
+  min-height: 420px;
+  margin: 0;
+  overflow: auto;
+  padding: 18px;
+  color: #dfe7f1;
+  background: #151a23;
+  line-height: 1.55;
+}
+
+.admin-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.admin-nav {
+  position: sticky;
+  top: 88px;
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.admin-nav a {
+  justify-content: flex-start;
+}
+
+.not-found {
+  display: grid;
+  gap: 8px;
+}
+
+@media (max-width: 900px) {
+  .topbar {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .primary-nav,
+  .auth-actions {
+    flex-wrap: wrap;
+  }
+
+  .dashboard-grid,
+  .problem-layout,
+  .admin-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .editor-panel,
+  .admin-nav {
+    position: static;
+  }
+}
+
+@media (max-width: 560px) {
+  .main-content {
+    width: min(100% - 20px, 1180px);
+    padding-top: 20px;
+  }
+
+  h1 {
+    font-size: 30px;
+  }
+
+  th,
+  td {
+    padding: 12px;
+  }
+}
+

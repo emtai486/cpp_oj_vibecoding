@@ -1,0 +1,74 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: oj-postgres
+    environment:
+      POSTGRES_DB: oj_db
+      POSTGRES_USER: oj_user
+      POSTGRES_PASSWORD: oj_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../backend/migrations:/migrations:ro
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U oj_user -d oj_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: oj-redis
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api-server:
+    build:
+      context: ../backend
+      dockerfile: api-server/Dockerfile
+    container_name: oj-api-server
+    environment:
+      API_HOST: 0.0.0.0
+      API_PORT: "8080"
+      DATABASE_URL: postgres://oj_user:oj_password@postgres:5432/oj_db
+      REDIS_URL: redis://redis:6379/0
+      OPENAPI_PATH: /app/openapi/openapi.json
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 3 bash -c '</dev/tcp/127.0.0.1/8080'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: oj-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      api-server:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  redis_data:
+

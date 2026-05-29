@@ -1,0 +1,34 @@
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Build outputs
+build/
+dist/
+out/
+*.o
+*.obj
+*.exe
+*.pdb
+*.ilk
+
+# Node
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+
+# Env and local data
+.env
+deploy/.env
+*.log
+data/
+tmp/
+
