@@ -53,3 +53,57 @@ export interface AuthResponse {
     role: 'user' | 'admin';
   };
 }
+
+export type SubmissionStatus =
+  | 'Pending'
+  | 'Judging'
+  | 'Accepted'
+  | 'Wrong Answer'
+  | 'Time Limit Exceeded'
+  | 'Memory Limit Exceeded'
+  | 'Runtime Error'
+  | 'Compilation Error'
+  | 'System Error';
+
+export interface SubmissionCaseResult {
+  id: number;
+  submission_id: number;
+  test_case_id: number | null;
+  status: SubmissionStatus;
+  time_ms: number | null;
+  memory_mb: number | null;
+  error_summary: string;
+  sort_order: number;
+  kind: 'sample' | 'public' | 'hidden' | 'custom';
+  input_summary: string;
+  output_summary: string;
+  created_at: string;
+}
+
+export interface SubmissionSummary {
+  id: number;
+  user_id: number;
+  username: string;
+  problem_id: number;
+  problem_title: string;
+  language: 'cpp17';
+  status: SubmissionStatus;
+  total_time_ms: number | null;
+  peak_memory_mb: number | null;
+  created_at: string;
+  finished_at: string | null;
+  judge_message: string | null;
+  testcase_passed_count: number;
+  testcase_total_count: number;
+  code_length: number;
+  ai_analysis_status: 'not_requested' | 'pending' | 'ready' | 'failed';
+}
+
+export interface SubmissionDetail extends SubmissionSummary {
+  source_code: string;
+  compile_error: string | null;
+  stdout: string | null;
+  stderr: string | null;
+  ai_analysis_id: number | null;
+  case_results: SubmissionCaseResult[];
+}

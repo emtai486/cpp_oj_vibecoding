@@ -66,7 +66,9 @@ a {
 
 .primary-nav,
 .auth-actions,
-.editor-toolbar {
+.editor-toolbar,
+.editor-actions,
+.result-summary {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -465,9 +467,40 @@ pre {
   outline: none;
 }
 
+.run-options {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-top: 1px solid var(--border);
+  background: #ffffff;
+}
+
+.run-options label {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+  font-weight: 700;
+}
+
 .problem-content {
   display: grid;
   gap: 24px;
+}
+
+.result-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.result-summary {
+  flex-wrap: wrap;
+  color: var(--muted);
+}
+
+.status-pill.accepted {
+  color: #0f6b4d;
+  background: #dff5ea;
 }
 
 .statement-text {

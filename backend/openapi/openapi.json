@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "AI Native Online Judge API",
-    "description": "Phase 2 hand-written OpenAPI document for authentication, problem browsing, and administrator problem/test-data management.",
-    "version": "0.2.0"
+    "description": "Phase 3 hand-written OpenAPI document for authentication, problem browsing, submissions, run tasks, and administrator problem/test-data management.",
+    "version": "0.3.0"
   },
   "servers": [
     {
@@ -281,8 +281,46 @@
         "tags": ["Submissions"],
         "summary": "Create a submission",
         "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SubmissionCreateRequest" }
+            }
+          }
+        },
         "responses": {
-          "501": { "$ref": "#/components/responses/NotImplemented" }
+          "201": { "$ref": "#/components/responses/SubmissionDetail" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "503": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/submissions/{id}": {
+      "get": {
+        "tags": ["Submissions"],
+        "summary": "Get a submission detail",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/IdPath" }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/SubmissionDetail" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/me/submissions": {
+      "get": {
+        "tags": ["Submissions"],
+        "summary": "List authenticated user's submissions",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PageSize" }
+        ],
+        "responses": {
+          "200": { "description": "Submission page" },
+          "401": { "$ref": "#/components/responses/Error" }
         }
       }
     },
@@ -291,8 +329,33 @@
         "tags": ["Submissions"],
         "summary": "Run code against samples or custom input",
         "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RunCreateRequest" }
+            }
+          }
+        },
         "responses": {
-          "501": { "$ref": "#/components/responses/NotImplemented" }
+          "201": { "$ref": "#/components/responses/SubmissionDetail" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "503": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/admin/submissions": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "List all submissions for administrators",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/PageSize" }
+        ],
+        "responses": {
+          "200": { "description": "Submission page" },
+          "403": { "$ref": "#/components/responses/Error" }
         }
       }
     },
@@ -373,6 +436,14 @@
         "content": {
           "application/json": {
             "schema": { "$ref": "#/components/schemas/ProblemDetailResponse" }
+          }
+        }
+      },
+      "SubmissionDetail": {
+        "description": "Submission detail",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/SubmissionDetailResponse" }
           }
         }
       },
@@ -538,6 +609,80 @@
           "sort_order": { "type": "integer", "minimum": 0 }
         }
       },
+      "SubmissionStatus": {
+        "type": "string",
+        "enum": [
+          "Pending",
+          "Judging",
+          "Accepted",
+          "Wrong Answer",
+          "Time Limit Exceeded",
+          "Memory Limit Exceeded",
+          "Runtime Error",
+          "Compilation Error",
+          "System Error"
+        ]
+      },
+      "SubmissionCreateRequest": {
+        "type": "object",
+        "required": ["problem_id", "source_code"],
+        "properties": {
+          "problem_id": { "type": "integer", "format": "int64" },
+          "language": { "type": "string", "enum": ["cpp17"], "default": "cpp17" },
+          "source_code": { "type": "string", "maxLength": 262144 }
+        }
+      },
+      "RunCreateRequest": {
+        "type": "object",
+        "required": ["problem_id", "source_code", "mode"],
+        "properties": {
+          "problem_id": { "type": "integer", "format": "int64" },
+          "source_code": { "type": "string", "maxLength": 262144 },
+          "mode": { "type": "string", "enum": ["samples", "custom"] },
+          "custom_input": { "type": "string", "maxLength": 1048576 }
+        }
+      },
+      "SubmissionCaseResult": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "submission_id": { "type": "integer", "format": "int64" },
+          "test_case_id": { "type": "integer", "format": "int64", "nullable": true },
+          "status": { "$ref": "#/components/schemas/SubmissionStatus" },
+          "time_ms": { "type": "integer", "nullable": true },
+          "memory_mb": { "type": "integer", "nullable": true },
+          "error_summary": { "type": "string" },
+          "sort_order": { "type": "integer" },
+          "kind": { "type": "string" },
+          "input_summary": { "type": "string" },
+          "output_summary": { "type": "string" }
+        }
+      },
+      "SubmissionDetail": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "user_id": { "type": "integer", "format": "int64" },
+          "username": { "type": "string" },
+          "problem_id": { "type": "integer", "format": "int64" },
+          "problem_title": { "type": "string" },
+          "language": { "type": "string", "enum": ["cpp17"] },
+          "source_code": { "type": "string" },
+          "status": { "$ref": "#/components/schemas/SubmissionStatus" },
+          "compile_error": { "type": "string", "nullable": true },
+          "total_time_ms": { "type": "integer", "nullable": true },
+          "peak_memory_mb": { "type": "integer", "nullable": true },
+          "stdout": { "type": "string", "nullable": true },
+          "stderr": { "type": "string", "nullable": true },
+          "judge_message": { "type": "string", "nullable": true },
+          "testcase_passed_count": { "type": "integer" },
+          "testcase_total_count": { "type": "integer" },
+          "case_results": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/SubmissionCaseResult" }
+          }
+        }
+      },
       "ProblemPageResponse": {
         "allOf": [
           { "$ref": "#/components/schemas/ApiResponse" },
@@ -567,6 +712,17 @@
             "type": "object",
             "properties": {
               "data": { "$ref": "#/components/schemas/ProblemDetail" }
+            }
+          }
+        ]
+      },
+      "SubmissionDetailResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/ApiResponse" },
+          {
+            "type": "object",
+            "properties": {
+              "data": { "$ref": "#/components/schemas/SubmissionDetail" }
             }
           }
         ]

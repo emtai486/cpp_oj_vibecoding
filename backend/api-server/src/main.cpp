@@ -1,4 +1,5 @@
 #include <httplib.h>
+#include "redis_client.hpp"
 #include <libpq-fe.h>
 #include <openssl/crypto.h>
 #include <openssl/evp.h>
@@ -1249,6 +1250,152 @@ std::string problem_returning_sql() {
          "submission_count, acceptance_rate, status, created_at, updated_at";
 }
 
+std::string nullable_number(const PgResult& result, int row, int column) {
+  return result.is_null(row, column) ? "null" : result.get(row, column);
+}
+
+std::string nullable_string(const PgResult& result, int row, int column) {
+  return result.is_null(row, column) ? "null" : json_string(result.get(row, column));
+}
+
+std::string submission_case_result_json(const PgResult& result, int row) {
+  std::ostringstream item;
+  item << "{";
+  item << "\"id\":" << result.get(row, 0) << ",";
+  item << "\"submission_id\":" << result.get(row, 1) << ",";
+  item << "\"test_case_id\":" << nullable_number(result, row, 2) << ",";
+  item << "\"status\":" << json_string(result.get(row, 3)) << ",";
+  item << "\"time_ms\":" << nullable_number(result, row, 4) << ",";
+  item << "\"memory_mb\":" << nullable_number(result, row, 5) << ",";
+  item << "\"error_summary\":" << json_string(result.get(row, 6)) << ",";
+  item << "\"sort_order\":" << result.get(row, 7) << ",";
+  item << "\"kind\":" << json_string(result.get(row, 8).empty() ? "custom" : result.get(row, 8)) << ",";
+  item << "\"input_summary\":" << json_string(result.get(row, 9)) << ",";
+  item << "\"output_summary\":" << json_string(result.get(row, 10)) << ",";
+  item << "\"created_at\":" << json_string(result.get(row, 11));
+  item << "}";
+  return item.str();
+}
+
+std::string submission_case_results_json(Database& db, long long submission_id) {
+  auto result = db.exec_params(
+      "SELECT r.id, r.submission_id, r.test_case_id, r.status, r.time_ms, r.memory_mb, "
+      "r.error_summary, r.sort_order, COALESCE(t.kind, 'custom'), COALESCE(t.input_summary, ''), "
+      "COALESCE(t.output_summary, ''), r.created_at "
+      "FROM submission_case_results r LEFT JOIN test_cases t ON t.id = r.test_case_id "
+      "WHERE r.submission_id = $1 ORDER BY r.sort_order ASC, r.id ASC",
+      {std::to_string(submission_id)});
+  std::ostringstream array;
+  array << "[";
+  for (int i = 0; i < result.rows(); ++i) {
+    if (i > 0) {
+      array << ",";
+    }
+    array << submission_case_result_json(result, i);
+  }
+  array << "]";
+  return array.str();
+}
+
+std::string submission_summary_json(const PgResult& result, int row) {
+  std::ostringstream item;
+  item << "{";
+  item << "\"id\":" << result.get(row, 0) << ",";
+  item << "\"user_id\":" << result.get(row, 1) << ",";
+  item << "\"username\":" << json_string(result.get(row, 2)) << ",";
+  item << "\"problem_id\":" << result.get(row, 3) << ",";
+  item << "\"problem_title\":" << json_string(result.get(row, 4)) << ",";
+  item << "\"language\":" << json_string(result.get(row, 5)) << ",";
+  item << "\"status\":" << json_string(result.get(row, 6)) << ",";
+  item << "\"total_time_ms\":" << nullable_number(result, row, 7) << ",";
+  item << "\"peak_memory_mb\":" << nullable_number(result, row, 8) << ",";
+  item << "\"created_at\":" << json_string(result.get(row, 9)) << ",";
+  item << "\"finished_at\":" << nullable_string(result, row, 10) << ",";
+  item << "\"judge_message\":" << nullable_string(result, row, 11) << ",";
+  item << "\"testcase_passed_count\":" << result.get(row, 12) << ",";
+  item << "\"testcase_total_count\":" << result.get(row, 13) << ",";
+  item << "\"code_length\":" << result.get(row, 14) << ",";
+  item << "\"ai_analysis_status\":" << json_string(result.get(row, 15));
+  item << "}";
+  return item.str();
+}
+
+std::string submission_detail_json(Database& db, const PgResult& result, int row) {
+  const long long submission_id = std::stoll(result.get(row, 0));
+  std::ostringstream item;
+  item << "{";
+  item << "\"id\":" << result.get(row, 0) << ",";
+  item << "\"user_id\":" << result.get(row, 1) << ",";
+  item << "\"username\":" << json_string(result.get(row, 2)) << ",";
+  item << "\"problem_id\":" << result.get(row, 3) << ",";
+  item << "\"problem_title\":" << json_string(result.get(row, 4)) << ",";
+  item << "\"language\":" << json_string(result.get(row, 5)) << ",";
+  item << "\"source_code\":" << json_string(result.get(row, 6)) << ",";
+  item << "\"status\":" << json_string(result.get(row, 7)) << ",";
+  item << "\"compile_error\":" << nullable_string(result, row, 8) << ",";
+  item << "\"total_time_ms\":" << nullable_number(result, row, 9) << ",";
+  item << "\"peak_memory_mb\":" << nullable_number(result, row, 10) << ",";
+  item << "\"created_at\":" << json_string(result.get(row, 11)) << ",";
+  item << "\"finished_at\":" << nullable_string(result, row, 12) << ",";
+  item << "\"stdout\":" << nullable_string(result, row, 13) << ",";
+  item << "\"stderr\":" << nullable_string(result, row, 14) << ",";
+  item << "\"judge_message\":" << nullable_string(result, row, 15) << ",";
+  item << "\"testcase_passed_count\":" << result.get(row, 16) << ",";
+  item << "\"testcase_total_count\":" << result.get(row, 17) << ",";
+  item << "\"ai_analysis_status\":" << json_string(result.get(row, 18)) << ",";
+  item << "\"ai_analysis_id\":" << nullable_number(result, row, 19) << ",";
+  item << "\"code_length\":" << result.get(row, 20) << ",";
+  item << "\"case_results\":" << submission_case_results_json(db, submission_id);
+  item << "}";
+  return item.str();
+}
+
+std::string submission_select_sql() {
+  return "SELECT s.id, s.user_id, u.username, s.problem_id, p.title, s.language, s.source_code, "
+         "s.status, s.compile_error, s.total_time_ms, s.peak_memory_mb, s.created_at, s.finished_at, "
+         "s.stdout, s.stderr, s.judge_message, s.testcase_passed_count, s.testcase_total_count, "
+         "s.ai_analysis_status, s.ai_analysis_id, s.code_length "
+         "FROM submissions s JOIN users u ON u.id = s.user_id JOIN problems p ON p.id = s.problem_id";
+}
+
+std::string submission_summary_select_sql() {
+  return "SELECT s.id, s.user_id, u.username, s.problem_id, p.title, s.language, s.status, "
+         "s.total_time_ms, s.peak_memory_mb, s.created_at, s.finished_at, s.judge_message, "
+         "s.testcase_passed_count, s.testcase_total_count, s.code_length, s.ai_analysis_status "
+         "FROM submissions s JOIN users u ON u.id = s.user_id JOIN problems p ON p.id = s.problem_id";
+}
+
+void enqueue_judge_task(oj::RedisClient& redis,
+                        const std::string& queue_name,
+                        const std::string& kind,
+                        long long submission_id) {
+  redis.lpush(queue_name, kind + ":" + std::to_string(submission_id));
+}
+
+long long create_submission_record(Database& db,
+                                   long long user_id,
+                                   long long problem_id,
+                                   const std::string& source_code,
+                                   const std::string& judge_message = "") {
+  auto result = db.exec_params(
+      "INSERT INTO submissions "
+      "(user_id, problem_id, language, source_code, status, judge_message, code_length) "
+      "VALUES ($1, $2, 'cpp17', $3, 'Pending', NULLIF($4, ''), $5) RETURNING id",
+      {std::to_string(user_id),
+       std::to_string(problem_id),
+       source_code,
+       judge_message,
+       std::to_string(source_code.size())});
+  return std::stoll(result.get(0, 0));
+}
+
+void fail_submission_enqueue(Database& db, long long submission_id, const std::string& message) {
+  db.exec_params(
+      "UPDATE submissions SET status = 'System Error', finished_at = now(), judge_message = $2 "
+      "WHERE id = $1",
+      {std::to_string(submission_id), message});
+}
+
 void bootstrap_admin(Database& db) {
   const std::string password = env_or("ADMIN_PASSWORD", "");
   if (password.empty() || !db.configured()) {
@@ -1321,8 +1468,14 @@ int main() {
   const std::string openapi_path = env_or("OPENAPI_PATH", "backend/openapi/openapi.json");
   const std::string jwt_secret = env_or("JWT_SECRET", "dev-secret-change-me");
   const std::string testdata_root = env_or("TESTDATA_ROOT", "testdata");
+  const std::string redis_url = env_or("REDIS_URL", "");
+  const std::string judge_queue = env_or("JUDGE_QUEUE", "judge:queue");
 
   Database db(env_or("DATABASE_URL", ""));
+  std::optional<oj::RedisClient> redis;
+  if (!redis_url.empty()) {
+    redis.emplace(redis_url);
+  }
   bootstrap_admin(db);
 
   httplib::Server server;
@@ -1363,7 +1516,7 @@ int main() {
   server.Get("/api/v1", [](const httplib::Request& req, httplib::Response& res) {
     const auto request_id = request_id_from(req);
     apply_common_headers(res, request_id);
-    send_ok(res, request_id, "{\"name\":\"AI Native Online Judge API\",\"phase\":\"phase2\"}");
+    send_ok(res, request_id, "{\"name\":\"AI Native Online Judge API\",\"phase\":\"phase3\"}");
   });
 
   server.Post("/api/auth/register", [&db, &jwt_secret](const httplib::Request& req, httplib::Response& res) {
@@ -1844,12 +1997,210 @@ int main() {
     }
   });
 
-  server.Post("/api/submissions", handle_not_implemented);
-  server.Get(R"(/api/submissions/[0-9]+)", handle_not_implemented);
-  server.Get("/api/me/submissions", handle_not_implemented);
-  server.Post("/api/run", handle_not_implemented);
+  server.Post("/api/submissions", [&db, &jwt_secret, &redis, &judge_queue](const httplib::Request& req, httplib::Response& res) {
+    const auto request_id = request_id_from(req);
+    apply_common_headers(res, request_id);
+    const auto user = require_auth(req, res, request_id, db, jwt_secret);
+    if (!user.has_value()) {
+      return;
+    }
+    try {
+      const JsonValue body = parse_json_body(req);
+      const long long problem_id = json_int_field(body, "problem_id", 0, 1, 2147483647);
+      const std::string language = lower_copy(trim(json_string_field(body, "language", "cpp17")));
+      const std::string source_code = json_string_field(body, "source_code");
+      if (language != "cpp17") {
+        send_error(res, 400, "VALIDATION_ERROR", "Only cpp17 is supported in V1", request_id);
+        return;
+      }
+      if (source_code.empty() || source_code.size() > 256 * 1024) {
+        send_error(res, 400, "VALIDATION_ERROR", "Source code must be 1-262144 bytes", request_id);
+        return;
+      }
+
+      auto problem = db.exec_params(
+          "SELECT id FROM problems WHERE id = $1 AND status = 'published'",
+          {std::to_string(problem_id)});
+      if (problem.rows() != 1) {
+        send_error(res, 404, "NOT_FOUND", "Problem not found", request_id);
+        return;
+      }
+
+      const long long submission_id = create_submission_record(db, user->id, problem_id, source_code);
+      try {
+        if (!redis.has_value()) {
+          throw std::runtime_error("REDIS_URL is not configured");
+        }
+        enqueue_judge_task(*redis, judge_queue, "submission", submission_id);
+      } catch (const std::exception& error) {
+        fail_submission_enqueue(db, submission_id, std::string("Unable to enqueue judge task: ") + error.what());
+        send_error(res, 503, "QUEUE_UNAVAILABLE", "Judge queue is unavailable", request_id);
+        return;
+      }
+
+      auto result = db.exec_params(submission_select_sql() + " WHERE s.id = $1", {std::to_string(submission_id)});
+      send_created(res, request_id, submission_detail_json(db, result, 0));
+    } catch (const DbException& error) {
+      std::cerr << "Create submission failed: " << error.what() << "\n";
+      send_error(res, 500, "DATABASE_ERROR", "Unable to create submission", request_id);
+    } catch (const std::exception& error) {
+      send_error(res, 400, "BAD_REQUEST", error.what(), request_id);
+    }
+  });
+
+  server.Get(R"(/api/submissions/([0-9]+))", [&db, &jwt_secret](const httplib::Request& req, httplib::Response& res) {
+    const auto request_id = request_id_from(req);
+    apply_common_headers(res, request_id);
+    const auto user = require_auth(req, res, request_id, db, jwt_secret);
+    if (!user.has_value()) {
+      return;
+    }
+    try {
+      const auto submission_id = path_id(req);
+      if (!submission_id.has_value()) {
+        send_error(res, 400, "BAD_REQUEST", "Invalid submission id", request_id);
+        return;
+      }
+      auto result = db.exec_params(submission_select_sql() + " WHERE s.id = $1", {std::to_string(*submission_id)});
+      if (result.rows() != 1) {
+        send_error(res, 404, "NOT_FOUND", "Submission not found", request_id);
+        return;
+      }
+      if (user->role != "admin" && std::stoll(result.get(0, 1)) != user->id) {
+        send_error(res, 403, "FORBIDDEN", "Cannot view another user's submission", request_id);
+        return;
+      }
+      send_ok(res, request_id, submission_detail_json(db, result, 0));
+    } catch (const DbException&) {
+      send_error(res, 500, "DATABASE_ERROR", "Unable to load submission", request_id);
+    }
+  });
+
+  server.Get("/api/me/submissions", [&db, &jwt_secret](const httplib::Request& req, httplib::Response& res) {
+    const auto request_id = request_id_from(req);
+    apply_common_headers(res, request_id);
+    const auto user = require_auth(req, res, request_id, db, jwt_secret);
+    if (!user.has_value()) {
+      return;
+    }
+    try {
+      const int page = query_int(req, "page", 1, 1, 100000);
+      const int page_size = query_int(req, "page_size", 20, 1, 100);
+      const int offset = (page - 1) * page_size;
+      auto total = db.exec_params("SELECT count(*) FROM submissions WHERE user_id = $1", {std::to_string(user->id)});
+      auto result = db.exec_params(
+          submission_summary_select_sql() +
+              " WHERE s.user_id = $1 ORDER BY s.created_at DESC LIMIT $2 OFFSET $3",
+          {std::to_string(user->id), std::to_string(page_size), std::to_string(offset)});
+      std::ostringstream items;
+      items << "[";
+      for (int i = 0; i < result.rows(); ++i) {
+        if (i > 0) {
+          items << ",";
+        }
+        items << submission_summary_json(result, i);
+      }
+      items << "]";
+      send_ok(res, request_id, page_json(items.str(), page, page_size, total.get(0, 0)));
+    } catch (const DbException&) {
+      send_error(res, 500, "DATABASE_ERROR", "Unable to list submissions", request_id);
+    }
+  });
+
+  server.Post("/api/run", [&db, &jwt_secret, &redis, &judge_queue, &testdata_root](const httplib::Request& req, httplib::Response& res) {
+    const auto request_id = request_id_from(req);
+    apply_common_headers(res, request_id);
+    const auto user = require_auth(req, res, request_id, db, jwt_secret);
+    if (!user.has_value()) {
+      return;
+    }
+    try {
+      const JsonValue body = parse_json_body(req);
+      const long long problem_id = json_int_field(body, "problem_id", 0, 1, 2147483647);
+      const std::string source_code = json_string_field(body, "source_code");
+      const std::string mode = lower_copy(trim(json_string_field(body, "mode", "samples")));
+      const std::string custom_input = json_string_field(body, "custom_input", "");
+      if (!one_of(mode, {"samples", "custom"})) {
+        send_error(res, 400, "VALIDATION_ERROR", "Run mode must be samples or custom", request_id);
+        return;
+      }
+      if (source_code.empty() || source_code.size() > 256 * 1024) {
+        send_error(res, 400, "VALIDATION_ERROR", "Source code must be 1-262144 bytes", request_id);
+        return;
+      }
+      if (custom_input.size() > 1024 * 1024) {
+        send_error(res, 400, "VALIDATION_ERROR", "Custom input must be at most 1MB", request_id);
+        return;
+      }
+
+      auto problem = db.exec_params(
+          "SELECT id FROM problems WHERE id = $1 AND status = 'published'",
+          {std::to_string(problem_id)});
+      if (problem.rows() != 1) {
+        send_error(res, 404, "NOT_FOUND", "Problem not found", request_id);
+        return;
+      }
+
+      const long long submission_id =
+          create_submission_record(db, user->id, problem_id, source_code, mode == "custom" ? "Custom run queued" : "Sample run queued");
+      if (mode == "custom") {
+        const std::filesystem::path input_path =
+            std::filesystem::path(testdata_root) / "runs" / ("submission_" + std::to_string(submission_id) + ".in");
+        write_file_checked(input_path, custom_input);
+      }
+
+      try {
+        if (!redis.has_value()) {
+          throw std::runtime_error("REDIS_URL is not configured");
+        }
+        enqueue_judge_task(*redis, judge_queue, mode == "custom" ? "run_custom" : "run_samples", submission_id);
+      } catch (const std::exception& error) {
+        fail_submission_enqueue(db, submission_id, std::string("Unable to enqueue run task: ") + error.what());
+        send_error(res, 503, "QUEUE_UNAVAILABLE", "Judge queue is unavailable", request_id);
+        return;
+      }
+
+      auto result = db.exec_params(submission_select_sql() + " WHERE s.id = $1", {std::to_string(submission_id)});
+      send_created(res, request_id, submission_detail_json(db, result, 0));
+    } catch (const DbException&) {
+      send_error(res, 500, "DATABASE_ERROR", "Unable to create run task", request_id);
+    } catch (const std::exception& error) {
+      send_error(res, 400, "BAD_REQUEST", error.what(), request_id);
+    }
+  });
   server.Post("/api/ai/hint", handle_not_implemented);
-  server.Get("/api/admin/submissions", handle_not_implemented);
+  server.Get("/api/admin/submissions", [&db, &jwt_secret](const httplib::Request& req, httplib::Response& res) {
+    const auto request_id = request_id_from(req);
+    apply_common_headers(res, request_id);
+    if (!require_admin(req, res, request_id, db, jwt_secret).has_value()) {
+      return;
+    }
+    try {
+      const int page = query_int(req, "page", 1, 1, 100000);
+      const int page_size = query_int(req, "page_size", 20, 1, 100);
+      const int offset = (page - 1) * page_size;
+      const std::string status = query_string(req, "status");
+      auto total = db.exec_params(
+          "SELECT count(*) FROM submissions WHERE ($1 = '' OR status = $1)",
+          {status});
+      auto result = db.exec_params(
+          submission_summary_select_sql() +
+              " WHERE ($1 = '' OR s.status = $1) ORDER BY s.created_at DESC LIMIT $2 OFFSET $3",
+          {status, std::to_string(page_size), std::to_string(offset)});
+      std::ostringstream items;
+      items << "[";
+      for (int i = 0; i < result.rows(); ++i) {
+        if (i > 0) {
+          items << ",";
+        }
+        items << submission_summary_json(result, i);
+      }
+      items << "]";
+      send_ok(res, request_id, page_json(items.str(), page, page_size, total.get(0, 0)));
+    } catch (const DbException&) {
+      send_error(res, 500, "DATABASE_ERROR", "Unable to list admin submissions", request_id);
+    }
+  });
   server.Get("/api/admin/workers", handle_not_implemented);
   server.Get("/api/admin/ai-logs", handle_not_implemented);
 

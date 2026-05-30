@@ -1,6 +1,6 @@
 # AI Native Online Judge V1
 
-Phase 2 implementation for the AI Native Online Judge described in `SPEC.md`.
+Phase 3 implementation for the AI Native Online Judge described in `SPEC.md`.
 
 ## Current Contents
 
@@ -8,9 +8,11 @@ Phase 2 implementation for the AI Native Online Judge described in `SPEC.md`.
 - C++ API Server based on `cpp-httplib`, PostgreSQL `libpq`, and OpenSSL.
 - User registration, login, PBKDF2 password hashing, and HMAC-SHA256 JWT authentication.
 - Published problem list/detail APIs and administrator problem/test-data management APIs.
+- Submission creation, Redis-backed judge queue, submission detail APIs, and user/admin submission history.
+- C++ Judge Worker that consumes Redis tasks, compiles/runs code in Docker, and writes test point results back to PostgreSQL.
 - Hand-written OpenAPI JSON exposed by the API Server.
-- Vue 3 + TypeScript + Vite frontend shell with initial routes and pages.
-- Docker Compose environment for frontend, API Server, PostgreSQL, Redis, and mounted test data.
+- Vue 3 + TypeScript + Vite frontend with problem detail run/submit controls, result polling, and submission history.
+- Docker Compose environment for frontend, API Server, Judge Worker, PostgreSQL, Redis, and mounted test data.
 - PostgreSQL migration bootstrap and Redis configuration.
 
 ## Quick Start
@@ -41,10 +43,11 @@ Override `ADMIN_PASSWORD` and `JWT_SECRET` before deploying outside local develo
 
 ```bash
 cmake -S backend -B backend/build
-cmake --build backend/build --target api-server
+cmake --build backend/build --target api-server judge-worker
 ```
 
 The backend CMake configuration fetches `cpp-httplib` when it is not already available as a CMake package.
+The Judge Worker requires Docker access at runtime and uses `gcc:13-bookworm` as the default sandbox image.
 
 ## Local Frontend Dev
 
